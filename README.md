@@ -86,3 +86,7 @@ npm run build
 ## 反馈与问题
 
 请在项目的 GitHub Issues 中报告问题或提交功能建议。
+
+## 许可证
+
+本项目采用 [MIT License](LICENSE)。
