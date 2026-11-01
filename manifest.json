@@ -1,0 +1,9 @@
+{
+	"id": "obsidian-okr",
+	"name": "OKR Dashboard",
+	"version": "0.1.0",
+	"minAppVersion": "1.5.0",
+	"description": "Manage objectives, key results, projects, and daily tasks in Markdown.",
+	"author": "",
+	"isDesktopOnly": false
+}

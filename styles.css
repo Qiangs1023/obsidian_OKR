@@ -1,0 +1,122 @@
+.okr-view-root {
+	--okr-accent: var(--interactive-accent);
+	--okr-border: var(--background-modifier-border);
+	--okr-muted: var(--text-muted);
+	min-height: 100%;
+	container-type: inline-size;
+	container-name: okr-pane;
+}
+
+.okr-shell { display: flex; min-height: 100%; gap: 24px; padding: 22px; }
+.okr-nav { width: 190px; flex: 0 0 190px; display: flex; flex-direction: column; gap: 6px; }
+.okr-brand { display: flex; align-items: center; gap: 10px; padding: 4px 10px 22px; font-size: 18px; font-weight: 700; }
+.okr-brand svg { color: var(--okr-accent); }
+.okr-nav-item, .okr-link-button, .okr-checkbox { border: 0; background: transparent; color: var(--text-normal); cursor: pointer; }
+.okr-nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 9px; text-align: left; }
+.okr-nav-item:hover, .okr-nav-item.is-active { background: var(--background-modifier-hover); }
+.okr-nav-item.is-active { color: var(--okr-accent); font-weight: 600; }
+.okr-nav-spacer { flex: 1; min-height: 20px; }
+.okr-primary-button, .okr-secondary-button { border: 0; border-radius: 9px; padding: 10px 14px; cursor: pointer; font-weight: 600; }
+.okr-primary-button { background: var(--okr-accent); color: var(--text-on-accent); }
+.okr-secondary-button { background: var(--background-secondary); color: var(--text-normal); }
+.okr-nav-create { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.okr-content { flex: 1; min-width: 0; max-width: 1400px; margin: 0 auto; }
+.okr-page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 6px 0 26px; }
+.okr-page-header h1 { margin: 0 0 5px; font-size: 28px; }
+.okr-page-header p { margin: 0; color: var(--okr-muted); }
+.okr-header-actions { display: flex; align-items: center; gap: 8px; }
+.okr-dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(260px, .85fr); gap: 28px; align-items: start; }
+.okr-task-area, .okr-project-area { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.okr-section-heading { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+.okr-section-heading svg { color: var(--okr-accent); }
+.okr-section-heading h2 { margin: 0; font-size: 16px; font-weight: 650; }
+.okr-count { margin-left: auto; color: var(--okr-muted); font-size: 12px; }
+.okr-task-list { border: 1px solid var(--okr-border); border-radius: 12px; overflow: hidden; }
+.okr-task-row { display: flex; align-items: flex-start; gap: 11px; min-height: 59px; padding: 9px 12px; border-bottom: 1px solid var(--okr-border); }
+.okr-task-row:last-child { border-bottom: 0; }
+.okr-task-row:hover { background: var(--background-secondary); }
+.okr-checkbox { color: var(--text-muted); padding: 5px; display: flex; }
+.okr-task-detail { flex: 1 1 0; min-width: 0; width: 0; }
+.okr-task-title { display: block; width: 100%; height: auto; min-height: 0; max-width: 100%; padding: 4px 8px; overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; word-break: break-word; text-align: left; line-height: 1.4; }
+.okr-task-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.okr-chip, .okr-date, .okr-muted { color: var(--okr-muted); font-size: 11px; }
+.okr-chip { background: var(--background-secondary); border-radius: 20px; padding: 2px 7px; }
+.okr-task-reschedule { width: 40px; min-width: 40px; padding: 4px; border: 1px solid var(--okr-border); border-radius: 6px; color: var(--text-muted); background: var(--background-primary); }
+.okr-empty-inline { padding: 15px; border: 1px dashed var(--okr-border); border-radius: 10px; color: var(--okr-muted); font-size: 13px; }
+.okr-empty-card { padding: 24px; border: 1px dashed var(--okr-border); border-radius: 12px; color: var(--okr-muted); }
+.okr-project-heading { margin: 0 0 12px; }
+.okr-project-list, .okr-collection-grid { display: flex; flex-direction: column; gap: 12px; }
+.okr-project-card, .okr-collection-card { padding: 15px; border: 1px solid var(--okr-border); border-radius: 12px; background: var(--background-primary); }
+.okr-project-title { display: block; font-size: 15px; font-weight: 650; text-align: left; }
+.okr-project-status { margin: 5px 0 15px; color: var(--okr-muted); font-size: 11px; }
+.okr-progress-label { display: flex; justify-content: space-between; gap: 8px; color: var(--okr-muted); font-size: 11px; }
+.okr-progress-track { height: 6px; margin-top: 7px; overflow: hidden; border-radius: 99px; background: var(--background-modifier-border); }
+.okr-progress-fill { height: 100%; border-radius: inherit; background: var(--okr-accent); }
+.okr-kr-list { display: flex; flex-direction: column; gap: 8px; margin-top: 13px; }
+.okr-kr-row { display: flex; justify-content: space-between; gap: 10px; color: var(--text-muted); font-size: 11px; }
+.okr-kr-row span:last-child { text-align: right; }
+.okr-unlinked { margin-top: 12px; color: var(--text-faint); font-size: 11px; }
+.okr-filter { width: auto; min-width: 120px; }
+.okr-all-task-list { margin-top: 16px; }
+.okr-related-row { margin-top: 9px; color: var(--text-muted); font-size: 12px; }
+.okr-collection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.okr-objective-list { display: flex; flex-direction: column; gap: 12px; }
+.okr-objective-card { padding: 15px; border: 1px solid var(--okr-border); border-radius: 12px; }
+.okr-objective-krs { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
+.okr-objective-krs .okr-related-row { display: flex; justify-content: space-between; text-align: left; }
+.okr-kr-value { color: var(--okr-muted); font-size: 12px; }
+.okr-task-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.okr-task-group-title { margin: 20px 0 8px; font-size: 15px; }
+.okr-modal .modal-content { display: flex; flex-direction: column; gap: 5px; }
+.okr-multi-select { min-height: 85px; width: 100%; }
+
+/* Obsidian views can live in a narrow split pane even when the app window is wide. */
+@container okr-pane (max-width: 760px) {
+	.okr-shell { flex-direction: column; gap: 12px; padding: 12px; }
+	.okr-nav { width: 100%; flex: none; flex-direction: row; gap: 4px; }
+	.okr-brand, .okr-nav-spacer, .okr-nav-create { display: none; }
+	.okr-nav-item { flex: 1; justify-content: center; gap: 6px; padding: 9px 6px; font-size: 12px; }
+	.okr-nav-item svg { width: 16px; height: 16px; }
+	.okr-content { width: 100%; }
+	.okr-page-header { align-items: flex-start; flex-wrap: wrap; gap: 10px; margin: 8px 0 18px; }
+	.okr-page-header h1 { font-size: 24px; white-space: nowrap; }
+	.okr-page-header p { font-size: 12px; }
+	.okr-header-actions { flex-wrap: wrap; }
+	.okr-dashboard-grid { display: flex; flex-direction: column; gap: 22px; }
+	.okr-task-area, .okr-project-area { width: 100%; }
+	.okr-project-list { display: grid; grid-template-columns: 1fr; }
+	.okr-collection-grid { grid-template-columns: 1fr; }
+}
+
+@container okr-pane (max-width: 380px) {
+	.okr-shell { padding: 9px; gap: 8px; }
+	.okr-nav { gap: 2px; }
+	.okr-nav-item { flex-direction: column; gap: 3px; padding: 6px 2px; font-size: 10px; }
+	.okr-page-header { display: block; }
+	.okr-page-header > div:first-child { margin-bottom: 10px; }
+	.okr-page-header p { display: none; }
+	.okr-header-actions { justify-content: flex-start; }
+	.okr-header-actions .okr-primary-button, .okr-header-actions .okr-secondary-button { padding: 8px 9px; font-size: 11px; }
+	.okr-section-heading { gap: 7px; }
+	.okr-task-row { gap: 6px; padding: 8px 5px; }
+	.okr-task-meta { gap: 3px; }
+	.okr-chip, .okr-date { font-size: 10px; }
+}
+
+@media (max-width: 700px) {
+	.okr-shell { display: flex; flex-direction: column; gap: 0; padding: 12px 14px 76px; }
+	.okr-nav { position: fixed; z-index: 50; left: 0; right: 0; bottom: 0; width: auto; flex: none; height: calc(58px + env(safe-area-inset-bottom)); padding: 6px 10px env(safe-area-inset-bottom); display: flex; flex-direction: row; justify-content: space-around; gap: 2px; border-top: 1px solid var(--okr-border); background: var(--background-primary); }
+	.okr-brand, .okr-nav-spacer, .okr-nav-create { display: none; }
+	.okr-nav-item { flex: 1; flex-direction: column; justify-content: center; gap: 3px; padding: 5px 2px; font-size: 10px; }
+	.okr-nav-item svg { width: 19px; height: 19px; }
+	.okr-page-header { align-items: flex-start; margin: 8px 0 20px; }
+	.okr-page-header h1 { font-size: 24px; }
+	.okr-page-header p { font-size: 12px; }
+	.okr-dashboard-grid { display: flex; flex-direction: column; gap: 24px; }
+	.okr-task-area, .okr-project-area { width: 100%; }
+	.okr-project-list { display: grid; grid-template-columns: 1fr; }
+	.okr-task-row { min-height: 62px; padding: 8px 7px; }
+	.okr-task-reschedule { width: 35px; min-width: 35px; }
+	.okr-header-actions { flex-wrap: wrap; justify-content: flex-end; }
+	.okr-header-actions .okr-primary-button, .okr-header-actions .okr-secondary-button { padding: 9px 10px; font-size: 12px; }
+}
