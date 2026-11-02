@@ -91,6 +91,14 @@ function readKind(value: unknown): OkrKind | null {
 	return value === "objective" || value === "key_result" || value === "project" || value === "task" ? value : null;
 }
 
+function statusLabel(status: string): string {
+	if (["todo", "not_started", "待开始", ""].includes(status)) return "待开始";
+	if (["doing", "in_progress", "active", "进行中"].includes(status)) return "进行中";
+	if (["done", "completed", "完成"].includes(status)) return "完成";
+	if (["cancelled", "canceled", "取消"].includes(status)) return "取消";
+	return "待开始";
+}
+
 export default class OkrPlugin extends Plugin {
 	settings: OkrSettings = DEFAULT_SETTINGS;
 
@@ -129,9 +137,15 @@ export default class OkrPlugin extends Plugin {
 	}
 
 	async activateView(): Promise<void> {
-		let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_OKR)[0];
+		let leaf: WorkspaceLeaf | undefined = this.app.workspace.getLeavesOfType(VIEW_TYPE_OKR)[0];
+		if (leaf && leaf.getRoot() !== this.app.workspace.rootSplit) {
+			// Move a dashboard left in a sidebar by an older version into the main tab strip.
+			leaf.detach();
+			leaf = undefined;
+		}
 		if (!leaf) {
-			leaf = this.app.workspace.getRightLeaf(false) ?? this.app.workspace.getLeaf(true);
+			// Use the main tab strip on desktop and mobile, reusing the existing dashboard when present.
+			leaf = this.app.workspace.getLeaf("tab");
 			await leaf.setViewState({ type: VIEW_TYPE_OKR, active: true });
 		}
 		await this.app.workspace.revealLeaf(leaf);
@@ -210,7 +224,7 @@ export default class OkrPlugin extends Plugin {
 		const file = await this.app.vault.create(path, content);
 		await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
 			frontmatter.type = kind;
-			frontmatter.status = values.status || (kind === "task" ? "todo" : "active");
+			frontmatter.status = values.status || "待开始";
 			for (const [key, value] of Object.entries(values)) {
 				if (key === "status" || value === "") continue;
 				if (key === "project" || key === "objective") frontmatter[key] = `[[${value}]]`;
@@ -243,6 +257,11 @@ export default class OkrPlugin extends Plugin {
 		const leaf = this.app.workspace.getLeaf(false);
 		await leaf.openFile(file);
 	}
+
+	async openRelatedNote(link: string, sourcePath: string): Promise<void> {
+		const file = this.app.metadataCache.getFirstLinkpathDest(link, sourcePath);
+		if (file) await this.openNote(file);
+	}
 }
 
 class OkrView extends ItemView {
@@ -250,6 +269,9 @@ class OkrView extends ItemView {
 	private taskFilter = "all";
 	private taskSort = "asc";
 	private taskGroup = "none";
+	private projectStatusFilter = "all";
+	private projectKrFilter = "all";
+	private projectSort = "asc";
 	private root: HTMLElement;
 
 	constructor(leaf: WorkspaceLeaf, private plugin: OkrPlugin) {
@@ -317,7 +339,7 @@ class OkrView extends ItemView {
 		const weekStart = localDate(startOfWeek());
 		const weekEnd = localDate(addDays(startOfWeek(), 6));
 		const notes = this.plugin.getNotes();
-		const tasks = notes.filter((note) => note.kind === "task" && note.status !== "done" && note.status !== "cancelled");
+		const tasks = notes.filter((note) => note.kind === "task" && !["完成", "取消"].includes(statusLabel(note.status)));
 		const actions = this.renderHeader(container, "仪表盘", `${today} · 今天开始推进重要的事`);
 		const quick = actions.createEl("button", { cls: "okr-secondary-button", text: "＋ 快速任务" });
 		quick.addEventListener("click", () => this.plugin.openCreateModal("task", () => this.render()));
@@ -341,13 +363,13 @@ class OkrView extends ItemView {
 			return;
 		}
 		const list = section.createDiv({ cls: "okr-task-list" });
-		for (const task of tasks) this.renderTaskRow(list, task);
+		for (const task of tasks) this.renderTaskRow(list, task, false);
 	}
 
-	private renderTaskRow(container: HTMLElement, task: OkrNote): void {
-		const row = container.createDiv({ cls: "okr-task-row" });
+	private renderTaskRow(container: HTMLElement, task: OkrNote, showMeta = true): void {
+		const row = container.createDiv({ cls: `okr-task-row${showMeta ? "" : " okr-dashboard-task-row"}` });
 		const checkbox = row.createEl("button", { cls: "okr-checkbox", attr: { "aria-label": "标记完成" } });
-		setIcon(checkbox, task.status === "doing" ? "circle-dot" : "circle");
+		setIcon(checkbox, statusLabel(task.status) === "进行中" ? "circle-dot" : "circle");
 		checkbox.addEventListener("click", async (event) => {
 			event.stopPropagation();
 			await this.plugin.setTaskStatus(task.file, "done");
@@ -356,10 +378,17 @@ class OkrView extends ItemView {
 		const detail = row.createDiv({ cls: "okr-task-detail" });
 		const title = detail.createEl("button", { cls: "okr-link-button okr-task-title", text: task.file.basename });
 		title.addEventListener("click", () => void this.plugin.openNote(task.file));
-		const meta = detail.createDiv({ cls: "okr-task-meta" });
-		if (task.project) meta.createSpan({ cls: "okr-chip", text: linkName(task.project) });
-		for (const keyResult of task.keyResults.slice(0, 2)) meta.createSpan({ cls: "okr-chip", text: linkName(keyResult) });
-		if (task.due) meta.createSpan({ cls: "okr-date", text: task.due });
+		const meta = showMeta ? detail.createDiv({ cls: "okr-task-meta" }) : null;
+		if (meta && task.project) {
+			const project = meta.createEl("button", { cls: "okr-chip okr-related-link", text: `项目 · ${linkName(task.project)}` });
+			project.addEventListener("click", (event) => { event.stopPropagation(); void this.plugin.openRelatedNote(task.project, task.file.path); });
+		}
+		for (const keyResult of meta ? task.keyResults : []) {
+			if (!meta) break;
+			const kr = meta.createEl("button", { cls: "okr-chip okr-related-link", text: `KR · ${linkName(keyResult)}` });
+			kr.addEventListener("click", (event) => { event.stopPropagation(); void this.plugin.openRelatedNote(keyResult, task.file.path); });
+		}
+		if (meta && task.due) meta.createSpan({ cls: "okr-date", text: task.due });
 		const menu = row.createEl("select", { cls: "okr-task-reschedule", attr: { "aria-label": "调整日期" } });
 		menu.createEl("option", { text: "⋯", value: "" });
 		menu.createEl("option", { text: "今天", value: localDate() });
@@ -412,12 +441,33 @@ class OkrView extends ItemView {
 	}
 
 	private renderCollection(container: HTMLElement, kind: "objective" | "project"): void {
-		const notes = this.plugin.getNotes().filter((note) => note.kind === kind);
+		let notes = this.plugin.getNotes().filter((note) => note.kind === kind);
 		const title = kind === "objective" ? "目标" : "项目";
 		const actions = this.renderHeader(container, title, kind === "objective" ? "持续关注真正重要的方向" : "查看每个项目的行动和结果");
 		if (kind === "objective") {
 			const addKr = actions.createEl("button", { cls: "okr-secondary-button", text: "＋ 新建 KR" });
 			addKr.addEventListener("click", () => this.plugin.openCreateModal("key_result", () => this.render()));
+		}
+		if (kind === "project") {
+			const controls = container.createDiv({ cls: "okr-task-controls" });
+			const status = controls.createEl("select", { cls: "okr-filter", attr: { "aria-label": "按项目状态筛选" } });
+			[["all", "全部状态"], ["待开始", "待开始"], ["进行中", "进行中"], ["完成", "完成"], ["取消", "取消"]].forEach(([value, label]) => status.createEl("option", { value, text: label }));
+			status.value = this.projectStatusFilter;
+			status.addEventListener("change", () => { this.projectStatusFilter = status.value; this.render(); });
+			const keyResults = this.plugin.getNotes().filter((note) => note.kind === "key_result");
+			const krFilter = controls.createEl("select", { cls: "okr-filter", attr: { "aria-label": "按关键结果筛选" } });
+			krFilter.createEl("option", { value: "all", text: "全部关键结果" });
+			keyResults.forEach((kr) => krFilter.createEl("option", { value: kr.file.basename, text: kr.file.basename }));
+			krFilter.value = this.projectKrFilter;
+			krFilter.addEventListener("change", () => { this.projectKrFilter = krFilter.value; this.render(); });
+			const sort = controls.createEl("select", { cls: "okr-filter", attr: { "aria-label": "项目状态排序" } });
+			sort.createEl("option", { value: "asc", text: "状态正序" });
+			sort.createEl("option", { value: "desc", text: "状态倒序" });
+			sort.value = this.projectSort;
+			sort.addEventListener("change", () => { this.projectSort = sort.value; this.render(); });
+			notes = notes.filter((note) => (this.projectStatusFilter === "all" || statusLabel(note.status) === this.projectStatusFilter) && (this.projectKrFilter === "all" || note.keyResults.some((kr) => linkName(kr) === this.projectKrFilter)));
+			const order = ["待开始", "进行中", "完成", "取消"];
+			notes.sort((a, b) => (order.indexOf(statusLabel(a.status)) - order.indexOf(statusLabel(b.status))) * (this.projectSort === "asc" ? 1 : -1));
 		}
 		if (!notes.length) {
 			container.createDiv({ cls: "okr-empty-card", text: `还没有${title}。点击右上角新建，或在库中创建带有 type: ${kind} 属性的 Markdown 笔记。` });
@@ -428,7 +478,7 @@ class OkrView extends ItemView {
 			const card = cards.createDiv({ cls: kind === "objective" ? "okr-objective-card" : "okr-collection-card" });
 			const titleButton = card.createEl("button", { cls: "okr-link-button okr-project-title", text: note.file.basename });
 			titleButton.addEventListener("click", () => void this.plugin.openNote(note.file));
-			card.createDiv({ cls: "okr-muted", text: note.status });
+			card.createDiv({ cls: "okr-muted", text: statusLabel(note.status) });
 			if (kind === "objective") {
 				const krList = card.createDiv({ cls: "okr-objective-krs" });
 				const krs = this.plugin.getNotes().filter((kr) => kr.kind === "key_result" && kr.objective && linkName(kr.objective) === note.file.basename);
@@ -454,7 +504,7 @@ class OkrView extends ItemView {
 		const actions = this.renderHeader(container, "任务", "按状态、日期和关联对象查看任务");
 		const controls = container.createDiv({ cls: "okr-task-controls" });
 		const filter = controls.createEl("select", { cls: "okr-filter", attr: { "aria-label": "按状态筛选" } });
-		for (const [value, label] of [["all", "全部状态"], ["todo", "等待中"], ["doing", "进行中"], ["cancelled", "已取消"], ["done", "已完成"]]) filter.createEl("option", { value, text: label });
+		for (const [value, label] of [["all", "全部状态"], ["待开始", "待开始"], ["进行中", "进行中"], ["取消", "取消"], ["完成", "完成"]]) filter.createEl("option", { value, text: label });
 		filter.value = this.taskFilter;
 		filter.addEventListener("change", () => { this.taskFilter = filter.value; this.render(); });
 		const sort = controls.createEl("select", { cls: "okr-filter", attr: { "aria-label": "日期排序" } });
@@ -467,7 +517,7 @@ class OkrView extends ItemView {
 		group.value = this.taskGroup;
 		group.addEventListener("change", () => { this.taskGroup = group.value; this.render(); });
 		const tasks = allTasks.filter((task) => {
-			if (this.taskFilter !== "all") return task.status === this.taskFilter;
+			if (this.taskFilter !== "all") return statusLabel(task.status) === this.taskFilter;
 			return true;
 		});
 		tasks.sort((a, b) => this.taskSort === "asc" ? a.due.localeCompare(b.due) : b.due.localeCompare(a.due));
@@ -482,7 +532,7 @@ class OkrView extends ItemView {
 		}
 		const groups = new Map<string, OkrNote[]>();
 		for (const task of tasks) {
-			const key = this.taskGroup === "project" ? (task.project ? linkName(task.project) : "未关联项目") : this.taskGroup === "key_result" ? (task.keyResults[0] ? linkName(task.keyResults[0]) : "未关联关键结果") : task.status;
+			const key = this.taskGroup === "project" ? (task.project ? linkName(task.project) : "未关联项目") : this.taskGroup === "key_result" ? (task.keyResults[0] ? linkName(task.keyResults[0]) : "未关联关键结果") : statusLabel(task.status);
 			groups.set(key, [...(groups.get(key) ?? []), task]);
 		}
 		for (const [name, groupTasks] of groups) {
